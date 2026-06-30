@@ -133,24 +133,38 @@
 </main>
 
 <style>
-	:global(body) {
+	/* Forzamos a que el padding no sume ancho extra a los elementos */
+	:global(*), :global(*::before), :global(*::after) {
+		box-sizing: border-box;
+	}
+
+	/* Bloqueamos la pantalla al 100% y matamos el scroll */
+	:global(html), :global(body) {
 		margin: 0;
+		padding: 0;
+		width: 100%;
+		height: 100%;
+		overflow: hidden; 
+	}
+
+	:global(body) {
 		background-color: #050505;
 		color: #ffffff;
 		font-family: system-ui, -apple-system, sans-serif;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		min-height: 100vh;
 	}
 
 	.contenedor {
 		display: flex;
 		flex-direction: column;
+		justify-content: center; /* Centrado vertical absoluto */
 		align-items: center;
 		gap: 3rem;
 		width: 100%;
-		padding: 2rem;
+		height: 100%;
+		padding: 1rem;
 	}
 
 	.menu {
@@ -184,7 +198,8 @@
 	}
 
 	.texto-brillante {
-		font-size: 5rem;
+		/* Clamp asegura que el texto se adapte al ancho del móvil sin desbordar */
+		font-size: clamp(3.5rem, 15vw, 5rem);
 		font-weight: bold;
 		margin: 0;
 		text-align: center;
@@ -200,6 +215,7 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 2rem;
+		width: 100%;
 	}
 
 	.controles {
@@ -259,7 +275,8 @@
 
 	@media (min-width: 768px) {
 		.texto-brillante {
-			font-size: 10rem;
+			/* Crece en pantallas grandes pero con un límite de 10rem */
+			font-size: clamp(6rem, 12vw, 10rem);
 		}
 		.contenedor {
 			gap: 5rem;
