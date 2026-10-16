@@ -36,11 +36,14 @@
     let inputMinutos: number = $state(5);
     let tempoSegundos: number = $state(0);
     let tempoActivo: boolean = $state(false);
-    let tempoFinalizado: boolean = $state(false); // Nuevo estado para la alerta visual
+    let tempoFinalizado: boolean = $state(false); 
     let intervaloTempo: ReturnType<typeof setInterval> | undefined;
+    
+    // Instancia de audio global para poder detenerla cuando le hagas caso
+    let audioAlarma: HTMLAudioElement | null = null;
 
     function iniciarTemporizador(minutos?: number): void {
-        tempoFinalizado = false; // Reiniciamos la alerta al iniciar
+        detenerAlarmaSonando(); // Limpiamos cualquier alarma previa
         if (minutos !== undefined) {
             inputMinutos = minutos;
             tempoSegundos = inputMinutos * 60;
@@ -58,25 +61,37 @@
             } else {
                 if (intervaloTempo) clearInterval(intervaloTempo);
                 tempoActivo = false;
-                tempoFinalizado = true; // Activamos la alerta visual
+                tempoFinalizado = true; // Activa el parpadeo
 
-                const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
-                audio.play().catch(() => {
-                    // Evita excepciones flotantes si el navegador bloquea el autoplay antes de interactuar
+                // Creamos el audio en bucle con un sonido más molesto y penetrante
+                audioAlarma = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
+                audioAlarma.loop = true; // ¡No dejará de sonar!
+                audioAlarma.play().catch(() => {
+                    // Evita bloqueo de autoplay si el navegador se pone terco
                 });
             }
         }, 1000);
     }
 
+    function detenerAlarmaSonando() {
+        if (audioAlarma) {
+            audioAlarma.pause();
+            audioAlarma.currentTime = 0;
+            audioAlarma = null;
+        }
+        tempoFinalizado = false;
+    }
+
     function detenerTemporizador(): void {
         tempoActivo = false;
         if (intervaloTempo) clearInterval(intervaloTempo);
+        detenerAlarmaSonando();
     }
 
     function reiniciarTemporizador(): void {
         tempoActivo = false;
-        tempoFinalizado = false; // Quitamos la alerta
         if (intervaloTempo) clearInterval(intervaloTempo);
+        detenerAlarmaSonando();
         tempoSegundos = 0;
     }
 
@@ -88,7 +103,6 @@
     }
 </script>
 
-<!-- Aplicamos la clase 'alerta-parpadeo' dinámicamente si tempoFinalizado es true -->
 <main class="contenedor" class:alerta-parpadeo={tempoFinalizado}>
     <nav class="menu">
         <button class:activo={vista === 'reloj'} onclick={() => (vista = 'reloj')}>Reloj</button>
@@ -128,6 +142,9 @@
                 <div class="controles">
                     {#if tempoActivo}
                         <button onclick={detenerTemporizador}>Pausar</button>
+                    {:else if tempoFinalizado}
+                        <!-- Botón especial súper llamativo para apagar el escándalo -->
+                        <button onclick={reiniciarTemporizador} class="btn-alerta-apagar">¡Hacer Caso / Apagar!</button>
                     {:else}
                         <button onclick={() => iniciarTemporizador()}>Reanudar</button>
                     {/if}
@@ -139,12 +156,10 @@
 </main>
 
 <style>
-    /* Forzamos a que el padding no sume ancho extra a los elementos */
     :global(*), :global(*::before), :global(*::after) {
         box-sizing: border-box;
     }
 
-    /* Bloqueamos la pantalla al 100% y matamos el scroll */
     :global(html), :global(body) {
         margin: 0;
         padding: 0;
@@ -172,19 +187,18 @@
         width: 100%;
         height: 100%;
         padding: 1rem;
-        transition: background-color 0.5s ease;
+        transition: background-color 0.3s ease;
         border-radius: 12px;
     }
 
-    /* Animación de parpadeo de alerta (cambia entre rojo oscuro y el fondo normal) */
     @keyframes parpadeoAlerta {
-        0% { background-color: rgba(255, 0, 0, 0.4); }
-        50% { background-color: rgba(255, 0, 0, 0.1); }
-        100% { background-color: rgba(255, 0, 0, 0.4); }
+        0% { background-color: rgba(255, 0, 0, 0.6); }
+        50% { background-color: rgba(0, 0, 0, 0.8); }
+        100% { background-color: rgba(255, 0, 0, 0.6); }
     }
 
     .alerta-parpadeo {
-        animation: parpadeoAlerta 1s infinite ease-in-out;
+        animation: parpadeoAlerta 0.6s infinite ease-in-out;
     }
 
     .menu {
@@ -272,6 +286,12 @@
 
     .btn-secundario:hover {
         box-shadow: 0 0 15px rgba(138, 43, 226, 0.4);
+    }
+
+    .btn-alerta-apagar {
+        background-color: #ff0055;
+        color: #fff;
+        animation: parpadeoAlerta 0.4s infinite alternate;
     }
 
     .input-grupo {
